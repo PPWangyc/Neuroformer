@@ -30,7 +30,7 @@ from neuroformer.utils import (set_seed, update_object, running_jupyter,
                                  create_modalities_dict)
 from neuroformer.visualize import set_plot_params
 from neuroformer.data_utils import round_n, Tokenizer, NFDataloader
-from neuroformer.datasets import load_visnav, load_V1AL
+from neuroformer.datasets import load_visnav, load_V1AL, load_ibl_dataset
 
 parent_path = os.path.dirname(os.path.dirname(os.getcwd())) + "/"
 import wandb
@@ -88,6 +88,14 @@ elif args.dataset == "V1AL":
     data, intervals, train_intervals, \
     test_intervals, finetune_intervals, \
     callback = load_V1AL(config)
+elif args.dataset == "ibl":
+    smth = load_ibl_dataset(cache_dir='data',
+                            split_method="predefined",
+                            num_sessions=args.num_sessions,
+                            eid=args.eid
+            )
+    print(smth)
+    exit()
 
 spikes = data['spikes']
 stimulus = data['stimulus']
@@ -256,7 +264,7 @@ else:
                           show_grads=False,
                           ckpt_path=CKPT_PATH, no_pbar=False, 
                           dist=args.dist, save_every=0, eval_every=5, min_eval_epoch=50,
-                          use_wandb=True, wandb_project="neuroformer", 
+                          use_wandb=False, wandb_project="neuroformer", 
                           wandb_group=f"1.5.1_visnav_{args.dataset}", wandb_name=args.title)
 
     trainer = Trainer(model, train_dataset, test_dataset, tconf, config)

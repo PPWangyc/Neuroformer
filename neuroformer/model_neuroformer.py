@@ -1202,8 +1202,9 @@ class Neuroformer(nn.Module):
         idx = x['id']
         pad = x['pad']
         B, t = idx.size()
-        
         features, pad = self.process_features(x)
+        print(features.keys())
+        exit()
         if get_attr(self.config, 'mlp_only', False):
             x = features['id']
         elif get_attr(self.config, 'gru_only', False):
