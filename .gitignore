@@ -171,3 +171,5 @@ training/*.ipynb
 **/envs
 **/.vscode
 **/.history
+
+*.out*

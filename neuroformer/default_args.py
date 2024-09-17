@@ -33,6 +33,8 @@ def parse_args():
     parser.add_argument("--finetune", action="store_true", default=False, help="Finetune")
     parser.add_argument("--batch_size", type=int, default=32, help="Batch size")
     parser.add_argument("--n_epochs", type=int, default=250, help="Number of epochs")
+    parser.add_argument("--eid", type=str, default="db4df448-e449-4a6f-a0e7-288711e7a75a")
+    parser.add_argument("--num_sessions", type=int, default=1)
     return parser.parse_args()
 
 class DefaultArgs:
