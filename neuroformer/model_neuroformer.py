@@ -677,7 +677,7 @@ class FeatureEncoder(nn.Module):
     def forward(self, neural, visual):
         for mod in self.neural_state_blocks:
             neural = mod(neural, neural, neural, self.mask)
-        if self.frame_state_blocks is not None and visual.nelement() > 0:
+        if self.frame_state_blocks is not None and visual is not None:
             for mod in self.frame_state_blocks:
                 visual = mod(visual, visual, visual)
             
@@ -962,7 +962,6 @@ class Neuroformer(nn.Module):
                             self.modality_embeddings[modality_group][variable_name]['temp_emb'] = TemporalEmbedding(config.n_embd, config.dropout.id)
                     self.modality_embeddings[modality_group]['pos_emb'] = PositionalEncoding2D(config.n_embd)
 
-
         # -- Modality Projection Heads (if used as prediction) -- #
         self.modality_projection_heads = nn.ModuleDict()
         if self.modalities_config is not None:
@@ -1122,6 +1121,9 @@ class Neuroformer(nn.Module):
         features = collections.defaultdict(lambda: collections.defaultdict())
         for modality_group, group_features in x['modalities'].items():
             for variable_name, variable in group_features.items():
+                # print(variable_name)
+                # print(variable['value'].size())
+                
                 modality_emb = self.modality_embeddings[modality_group][variable_name]['mlp'](variable['value'])
                 if modality_emb.dim() < 4:
                     modality_emb = modality_emb.unsqueeze(-2)
@@ -1131,9 +1133,13 @@ class Neuroformer(nn.Module):
                 modality_emb = rearrange(modality_emb, 'b t c e -> b (t c) e')
                 modality_emb = self.id_drop(modality_emb + modality_temp_emb)
                 features[modality_group][variable_name] = modality_emb
+                # print(features[modality_group][variable_name].size())
+                
             features[modality_group]['all'] = torch.cat([features[modality_group][variable_name] for variable_name in features[modality_group]], dim=1).unsqueeze(-2)
             features[modality_group]['all'] = features[modality_group]['all'] + self.modality_embeddings[modality_group]['pos_emb'](features[modality_group]['all'])
             features[modality_group]['all'] = rearrange(features[modality_group]['all'], 'b t 1 e -> b t e')
+            # print(features[modality_group]['all'].size())
+            # exit()
         return features
 
     def process_features(self, x):
@@ -1203,8 +1209,6 @@ class Neuroformer(nn.Module):
         pad = x['pad']
         B, t = idx.size()
         features, pad = self.process_features(x)
-        print(features.keys())
-        exit()
         if get_attr(self.config, 'mlp_only', False):
             x = features['id']
         elif get_attr(self.config, 'gru_only', False):

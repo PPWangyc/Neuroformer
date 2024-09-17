@@ -49,6 +49,58 @@ def get_binned_spikes_from_sparse(spikes_sparse_data_list, spikes_sparse_indices
 
     return binned_spikes
 
+def get_binned_spikes_from_dataset(dataset):
+    binned_spikes_data = get_binned_spikes_from_sparse(
+        dataset["spikes_sparse_data"], 
+        dataset["spikes_sparse_indices"],
+        dataset["spikes_sparse_indptr"],
+        dataset["spikes_sparse_shape"]
+        )
+    return binned_spikes_data
+
+def get_intervals(train_dataset, val_dataset, test_dataset):
+    train_data = get_binned_spikes_from_dataset(train_dataset)
+    val_data = get_binned_spikes_from_dataset(val_dataset)
+    test_data = get_binned_spikes_from_dataset(test_dataset)
+    bin_size = train_dataset['binsize'][0]
+    print(bin_size)
+    spikes = np.concatenate([train_data, val_data, test_data], axis=0)
+    B, T, N = spikes.shape # Trial, Time, Neuron
+    spikes = spikes.reshape(B * T, N).T
+    wheel_speed = np.concatenate([
+        np.asarray(train_dataset['wheel-speed']), 
+        np.asarray(val_dataset['wheel-speed']), 
+        np.asarray(test_dataset['wheel-speed'])
+    ])
+    
+    whisker_energy = np.concatenate([
+        np.asarray(train_dataset['whisker-motion-energy']), 
+        np.asarray(val_dataset['whisker-motion-energy']), 
+        np.asarray(test_dataset['whisker-motion-energy'])
+    ])
+    speed_energy = np.concatenate([wheel_speed, whisker_energy], axis=1)
+    data = {
+        'spikes': spikes,
+        'se': speed_energy,
+        'stimulus': None
+    }
+
+    # Creating intervals
+    train_intervals = np.arange(0, train_data.shape[0]) * bin_size * T
+    val_intervals = np.arange(train_data.shape[0], train_data.shape[0] + val_data.shape[0]) * bin_size * T
+    test_intervals = np.arange(train_data.shape[0] + val_data.shape[0], train_data.shape[0] + val_data.shape[0] + test_data.shape[0]) * bin_size * T
+    
+    # Concatenate all intervals
+    intervals = np.concatenate([train_intervals, val_intervals, test_intervals])
+    return {
+        "data": data,
+        "intervals": intervals,
+        "train_intervals": train_intervals,
+        "val_intervals": val_intervals,
+        "test_intervals": test_intervals,
+        "callback": None
+    }
+
 # This function will fetch all dataset repositories for a given user or organization
 def get_user_datasets(user_or_org_name):
     all_datasets = list_datasets()
@@ -155,9 +207,14 @@ def load_visnav(version, config, selection=None):
         data['spikes'] = data['spikes'][selection - 1]
 
     spikes = data['spikes']
+    print(data['spikes'].shape)
+    print(data['speed'].shape)
+    print(data['stimulus'].shape)
+    print(data['phi'].shape)
+    print(data['th'].shape)
+    # exit()
     intervals = np.arange(0, spikes.shape[1] * config.resolution.dt, config.window.curr)
     train_intervals, test_intervals, finetune_intervals = split_data_by_interval(intervals, r_split=0.8, r_split_ft=0.01)
-
     return data, intervals, train_intervals, test_intervals, finetune_intervals, visnav_callback
 
 

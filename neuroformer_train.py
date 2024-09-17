@@ -30,7 +30,7 @@ from neuroformer.utils import (set_seed, update_object, running_jupyter,
                                  create_modalities_dict)
 from neuroformer.visualize import set_plot_params
 from neuroformer.data_utils import round_n, Tokenizer, NFDataloader
-from neuroformer.datasets import load_visnav, load_V1AL, load_ibl_dataset
+from neuroformer.datasets import load_visnav, load_V1AL, load_ibl_dataset, get_intervals
 
 parent_path = os.path.dirname(os.path.dirname(os.getcwd())) + "/"
 import wandb
@@ -84,19 +84,34 @@ if args.dataset in ["lateral", "medial"]:
     test_intervals, finetune_intervals, \
     callback = load_visnav(args.dataset, config, 
                            selection=config.selection if hasattr(config, "selection") else None)
+    print(data.keys())
+    print(intervals.shape, train_intervals.shape, test_intervals.shape, finetune_intervals.shape)
+    # exit()
 elif args.dataset == "V1AL":
     data, intervals, train_intervals, \
     test_intervals, finetune_intervals, \
     callback = load_V1AL(config)
 elif args.dataset == "ibl":
-    smth = load_ibl_dataset(cache_dir='data',
-                            split_method="predefined",
-                            num_sessions=args.num_sessions,
-                            eid=args.eid
-            )
-    print(smth)
-    exit()
-
+    train_dataset, val_dataset, test_dataset, meta_data = load_ibl_dataset(
+        cache_dir='data',
+        split_method="predefined",
+        num_sessions=args.num_sessions,
+        eid=args.eid
+        )
+    print(meta_data)
+    data_dict = get_intervals(
+        train_dataset=train_dataset,
+        val_dataset=val_dataset,
+        test_dataset=test_dataset,
+    )
+    data, intervals, train_intervals, \
+    test_intervals, finetune_intervals, \
+    callback = data_dict["data"], data_dict["intervals"], data_dict["train_intervals"], \
+    data_dict["val_intervals"], data_dict["test_intervals"], \
+    data_dict["callback"]
+    print(data.keys())
+    print(intervals.shape, train_intervals.shape, test_intervals.shape, finetune_intervals.shape)
+    
 spikes = data['spikes']
 stimulus = data['stimulus']
 
@@ -159,7 +174,7 @@ Modalities: any additional modalities other than spikes and frames
 """
 
 frames = {'feats': stimulus, 'callback': callback, 'window': config.window.frame, 'dt': config.resolution.dt}
-
+frames = None if args.dataset == 'ibl' else frames
 
 def configure_token_types(config, modalities):
     max_window = max(config.window.curr, config.window.prev)
@@ -264,7 +279,7 @@ else:
                           show_grads=False,
                           ckpt_path=CKPT_PATH, no_pbar=False, 
                           dist=args.dist, save_every=0, eval_every=5, min_eval_epoch=50,
-                          use_wandb=False, wandb_project="neuroformer", 
+                          use_wandb=True, wandb_project="neuroformer", 
                           wandb_group=f"1.5.1_visnav_{args.dataset}", wandb_name=args.title)
 
     trainer = Trainer(model, train_dataset, test_dataset, tconf, config)

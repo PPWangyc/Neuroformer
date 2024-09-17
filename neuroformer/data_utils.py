@@ -538,6 +538,10 @@ def pad_tensor(x, length, pad_value=0):
         print(f"error, x.shape: {x}, length: {length}")
         raise ValueError
     if n_pad < 0:
+        if n_pad == -199:
+            # generate zeros tensor with shape length, x.shape[-1]
+            pad_tensor = torch.zeros((length, x.shape[-1]), dtype=x.dtype, device=x.device)
+            return pad_tensor
         return x[..., -length:]
     else:
         pad = list(x.shape)
@@ -925,10 +929,15 @@ class NFDataloader(Dataset):
             Returns interval[0] >= data < interval[1]
             """
             data = get_var(data, interval, variable_name=variable_name, trial=trial, dt=dt)
+            # print(data.keys())
             behavior = torch.tensor(np.array(data[variable_name]), 
                                     dtype=torch.float32)
+            # print(behavior.shape)
             if len(data) > 0:
                 behavior_dt = torch.tensor(np.array(data['Time']) - np.array(data['Interval']), dtype=torch.float32)
+                # print("Time: ", data['Time'])
+                # print("Interval: ", data['Interval'])
+                # print('behavior_dt: ', behavior_dt)
             else:
                 behavior_dt = torch.tensor([0], dtype=torch.float32)
             
@@ -939,6 +948,7 @@ class NFDataloader(Dataset):
 
             # pad
             n_expected_samples = int((interval[1] - interval[0]) / dt)
+            # print('n_expected_samples: ', n_expected_samples)
             behavior = pad_tensor(behavior, n_expected_samples, self.stoi['PAD'])
             behavior_dt = pad_tensor(behavior_dt, n_expected_samples, self.stoi_dt['PAD'])
             assert len(behavior) == len(behavior_dt), f"behavior: {len(behavior)}, behavior_dt: {len(behavior_dt)}"
@@ -1054,8 +1064,8 @@ class NFDataloader(Dataset):
                         t['Stimulus'] = interval_[2].astype(int) if self.dataset not in ['LRN', 'Distance-Coding', 'lateral', 'medial', 'V1AL'] else 0
                     else:
                         t['Interval'] = interval_
-                        t['Trial'] = interval_[2].astype(int) if self.dataset not in ['LRN', 'Distance-Coding', 'lateral', 'medial', 'V1AL'] else 0
-                        t['Stimulus'] = torch.zeros(1, dtype=torch.long) if self.dataset not in ['LRN', 'Distance-Coding'] else None
+                        t['Trial'] = interval_[2].astype(int) if self.dataset not in ['LRN', 'Distance-Coding', 'lateral', 'medial', 'V1AL', 'ibl'] else 0
+                        t['Stimulus'] = torch.zeros(1, dtype=torch.long) if self.dataset not in ['LRN', 'Distance-Coding', 'ibl'] else None
 
                 x = collections.defaultdict(list)
                 y = collections.defaultdict(list)
@@ -1096,6 +1106,7 @@ class NFDataloader(Dataset):
                             #     var_interval = (current_id_interval[1] - self.window['behavior'], current_id_interval[1]) 
                             else:
                                 var_interval = (current_id_interval[0], current_id_interval[1])
+                                # print(var_interval)
                             value, dt = self.get_behavior(variable['data'], var_interval, 
                                                         variable_name=variable_name, trial=t['Trial'], dt=variable['dt'],
                                                         tokenizer=self.tokenizer if variable['objective'] == 'classification' else None)
