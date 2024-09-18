@@ -238,8 +238,8 @@ recursive_print(y)
 preds, features, loss = model(x, y)
 
 # Set training parameters
-MAX_EPOCHS = 250
-BATCH_SIZE = 32 * 5
+MAX_EPOCHS = 2000
+BATCH_SIZE = 16
 SHUFFLE = True
 
 if config.gru_only:
@@ -271,7 +271,7 @@ if args.sweep_id is not None:
     wandb.agent(args.sweep_id, function=train_sweep)
 else:
     # Create a TrainerConfig and Trainer
-    tconf = TrainerConfig(max_epochs=MAX_EPOCHS, batch_size=BATCH_SIZE, learning_rate=2e-4, 
+    tconf = TrainerConfig(max_epochs=MAX_EPOCHS, batch_size=BATCH_SIZE, learning_rate=1e-4, 
                           num_workers=16, lr_decay=True, patience=3, warmup_tokens=8e7, 
                           decay_weights=True, weight_decay=1.0, shuffle=SHUFFLE,
                           final_tokens=len(train_dataset)*(config.block_size.id) * (MAX_EPOCHS),
