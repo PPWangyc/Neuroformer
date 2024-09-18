@@ -971,7 +971,7 @@ class Neuroformer(nn.Module):
                         if modality_type not in self.modality_projection_heads.keys():
                             self.modality_projection_heads[modality_type] = nn.ModuleDict()
                         if variable_config.get('objective') == 'regression':
-                            self.modality_projection_heads[modality_type][variable_name] = nn.Linear(config.n_embd, 1, bias=True)
+                            self.modality_projection_heads[modality_type][variable_name] = nn.Linear(config.n_embd, 100, bias=True)
                         if variable_config.get('objective') == 'classification':
                             self.modality_projection_heads[modality_type][variable_name] = nn.Linear(config.n_embd, variable_config.get('n_classes', 1), bias=False)
                         
