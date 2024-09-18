@@ -1056,7 +1056,7 @@ class NFDataloader(Dataset):
                 y = [frame_token_2... frame_token_n + 1 ..., id_2, id_n + 1,]
 
                 """
-
+                # print(f"getting item {idx}")
                 # grab a chunk of (block_size + 1) characters from the data
                 if isinstance(self.t, pd.DataFrame):
                     t = self.t.iloc[idx]
