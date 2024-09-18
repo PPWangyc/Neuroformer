@@ -238,8 +238,8 @@ recursive_print(y)
 preds, features, loss = model(x, y)
 
 # Set training parameters
-MAX_EPOCHS = 250
-BATCH_SIZE = 32 * 5
+MAX_EPOCHS = 2000
+BATCH_SIZE = 16
 SHUFFLE = True
 
 if config.gru_only:

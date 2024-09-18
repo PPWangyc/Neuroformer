@@ -170,6 +170,7 @@ def generate_spikes(model, dataset, window, window_prev, tokenizer,
     context = [] # torch.tensor(0, device=device).unsqueeze(0)
     data = dict()
     data['true'] = []
+    data['true_dt'] = []
     data['ID'] = context
     data['time'] = []
     data['dt'] = context
@@ -320,9 +321,9 @@ def generate_spikes(model, dataset, window, window_prev, tokenizer,
             
             data['ID'] = data['ID'] + ix_itos.tolist()    # torch.cat((data['ID'], ix_itos))
             data['dt'] = data['dt'] + dtx_itos          # torch.cat((data['dt'], dtx_itos))
-            data['Trial'] = data['Trial'] + x['trial'].tolist()            # torch.cat((data['Trial'], x['trial']))
+            # data['Trial'] = data['Trial'] + x['trial'].tolist()            # torch.cat((data['Trial'], x['trial']))
+            data['Trial'] = data['Trial'] + [it]           # concat trial ID
             data['Interval'] = data['Interval'] + x['interval'].tolist() # torch.cat((data['Interval'], x['interval']))
-
             # x['id_full'] = torch.cat((x['id_full'], ix.flatten()))
             # x['dt_full'] = torch.cat((x['dt_full'], ix_dt.flatten())) if pred_dt else x['dt']
 
@@ -330,7 +331,8 @@ def generate_spikes(model, dataset, window, window_prev, tokenizer,
         data['time'] = data['time'] + dty_itos
         # data['true'] = torch.cat((data['true'], y['id'][:, :T_id - pad].flatten()))
         data['true'] = data['true'] + list(y['id'][:, :T_id - pad].flatten())
-        pbar.set_description(f"len pred: {len(data['ID'])}, len true: {len(data['true'])}")
+        data['true_dt'] = data['true_dt'] + list(y['dt'][:, :T_id - pad].flatten())
+        pbar.set_description(f"len pred: {len(data['ID'])}, len true: {len(data['true'])}, tria_id: {it}")
 
         
     return data

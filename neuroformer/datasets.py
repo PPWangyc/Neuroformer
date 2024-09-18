@@ -81,8 +81,10 @@ def get_intervals(train_dataset, val_dataset, test_dataset):
     speed_energy = np.concatenate([wheel_speed, whisker_energy], axis=1)
     data = {
         'spikes': spikes,
-        'se': speed_energy,
-        'stimulus': None
+        # 'se': speed_energy,
+        'stimulus': None,
+        'wheel_speed': wheel_speed.flatten(),
+        'whisker_energy': whisker_energy.flatten()
     }
 
     # Creating intervals
