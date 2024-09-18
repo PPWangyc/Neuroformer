@@ -35,7 +35,10 @@ window:
   frame: 0.15
   curr: 2
   prev: 2
-  speed: 2
+  # whisker_energy: 2
+  # wheel_speed: 2
+  # se: 2
+  # speed: 2
 
 # # Hey! Uncomment here to input modalities!
 # # ...or add your own :D
@@ -43,12 +46,22 @@ modalities:
   behavior:
     n_layers: 4
     variables:
-      se:
-        data: se # wheel_speed and whisker_motion_energy
-        dt: 2
+      # se:
+      #   data: se # wheel_speed and whisker_motion_energy
+      #   dt: 0.02
+      #   objective: null
+      #   predict: false
+      wheel_speed:
+        data: wheel_speed # wheel_speed and whisker_motion_energy
+        dt: 0.02
         objective: null
         predict: false
-    window: 2
+      whisker_energy:
+        data: whisker_energy # wheel_speed and whisker_motion_energy
+        dt: 0.02
+        objective: null
+        predict: false
+    window: 0.02
 
 
 predict: null
@@ -63,14 +76,17 @@ frame_encoder:
 contrastive:
   contrastive: true
   # vars: ['id', 'frames', {'behavior': 'speed'}] # After inputting behavior, you can uncomment this! {'variable': 'speed'}]
-  vars: ['id', {'behavior': 'se'}]
+  vars: ['id', {'behavior': 'all'}]
   clip_embd: 512
   clip_temp: 0.5
 
 # resolution for predictions
 resolution:
-  dt: 2
-  speed: 0.2
+  dt: 0.02
+  wheel_speed: 0.02
+  whisker_energy: 0.02
+  # se: 0.02
+  # speed: 0.2
   frames: 0.05
 
 # GRU, MLP experiments

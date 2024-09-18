@@ -1121,16 +1121,17 @@ class Neuroformer(nn.Module):
         features = collections.defaultdict(lambda: collections.defaultdict())
         for modality_group, group_features in x['modalities'].items():
             for variable_name, variable in group_features.items():
-                # print(variable_name)
-                # print(variable['value'].size())
                 
                 modality_emb = self.modality_embeddings[modality_group][variable_name]['mlp'](variable['value'])
                 if modality_emb.dim() < 4:
                     modality_emb = modality_emb.unsqueeze(-2)
                 modality_temp_emb = self.modality_embeddings[modality_group][variable_name]['temp_emb'](variable['dt'].float()) if self.config.temp_emb and 'dt' in variable else 0
-                n_vars = variable['value'].size(1)
-                modality_temp_emb = modality_temp_emb.repeat(1, n_vars, 1)
+                # print(modality_temp_emb.shape)
+                # n_vars = variable['value'].size(1)
+                # modality_temp_emb = modality_temp_emb.repeat(1, n_vars, 1)
+                # print(modality_temp_emb.shape)
                 modality_emb = rearrange(modality_emb, 'b t c e -> b (t c) e')
+                # print(modality_emb.shape, modality_temp_emb.shape)
                 modality_emb = self.id_drop(modality_emb + modality_temp_emb)
                 features[modality_group][variable_name] = modality_emb
                 # print(features[modality_group][variable_name].size())
@@ -1139,7 +1140,6 @@ class Neuroformer(nn.Module):
             features[modality_group]['all'] = features[modality_group]['all'] + self.modality_embeddings[modality_group]['pos_emb'](features[modality_group]['all'])
             features[modality_group]['all'] = rearrange(features[modality_group]['all'], 'b t 1 e -> b t e')
             # print(features[modality_group]['all'].size())
-            # exit()
         return features
 
     def process_features(self, x):

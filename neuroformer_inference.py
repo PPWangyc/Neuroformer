@@ -25,7 +25,7 @@ from neuroformer.utils import get_attr
 from neuroformer.utils import (set_seed, running_jupyter, 
                                  all_device, recursive_print,
                                  create_modalities_dict)
-from neuroformer.datasets import load_visnav, load_V1AL
+from neuroformer.datasets import load_visnav, load_V1AL, load_ibl_dataset, get_intervals
 from neuroformer.simulation import generate_spikes, decode_modality
 parent_path = os.path.dirname(os.path.dirname(os.getcwd())) + "/"
 
@@ -84,7 +84,26 @@ elif args.dataset == "V1AL":
     data, intervals, train_intervals, \
     test_intervals, finetune_intervals, \
     callback = load_V1AL(config)
-
+elif args.dataset == "ibl":
+    train_dataset, val_dataset, test_dataset, meta_data = load_ibl_dataset(
+        cache_dir='data',
+        split_method="predefined",
+        num_sessions=args.num_sessions,
+        eid=args.eid
+        )
+    print(meta_data)
+    data_dict = get_intervals(
+        train_dataset=train_dataset,
+        val_dataset=val_dataset,
+        test_dataset=test_dataset,
+    )
+    data, intervals, train_intervals, \
+    test_intervals, finetune_intervals, \
+    callback = data_dict["data"], data_dict["intervals"], data_dict["train_intervals"], \
+    data_dict["val_intervals"], data_dict["test_intervals"], \
+    data_dict["callback"]
+    print(data.keys())
+    print(intervals.shape, train_intervals.shape, test_intervals.shape, finetune_intervals.shape)
 spikes = data['spikes']
 stimulus = data['stimulus']
 
@@ -126,7 +145,7 @@ from neuroformer.data_utils import NFDataloader
 
 modalities = create_modalities_dict(data, config.modalities)
 frames = {'feats': stimulus, 'callback': callback, 'window': config.window.frame, 'dt': config.resolution.dt}
-
+frames = None if args.dataset == "ibl" else frames
 train_dataset = NFDataloader(spikes_dict, tokenizer, config, dataset=args.dataset, 
                              frames=frames, intervals=train_intervals, modalities=modalities)
 test_dataset = NFDataloader(spikes_dict, tokenizer, config, dataset=args.dataset, 
@@ -188,7 +207,7 @@ results_trial = generate_spikes(model, finetune_dataset, window,
                                 true_past=true_past,
                                 get_dt=get_dt, gpu=gpu, pred_dt=pred_dt,
                                 plot_probs=False)
-
+print(results_trial.keys())
 # Create a filename string with the parameters
 filename = f"results_trial_sample-{sample}_top_p-{top_p}_top_p_t-{top_p_t}_temp-{temp}_temp_t-{temp_t}_frame_end-{frame_end}_true_past-{true_past}_get_dt-{get_dt}_gpu-{gpu}_pred_dt-{pred_dt}.pkl"
 
@@ -201,8 +220,8 @@ print(f"Saving inference results in {os.path.join(save_inference_path, filename)
 
 with open(os.path.join(save_inference_path, filename), "wb") as f:
     pickle.dump(results_trial, f)
-
-
+print(results_trial['ID'])
+exit()
 # %%
 # model.load_state_dict(torch.load(os.path.join(CKPT_PATH, f"_epoch_speed.pt"), map_location=torch.device('cpu')))
 model.load_state_dict(torch.load(os.path.join(CKPT_PATH, f"model.pt"), map_location=torch.device('cpu')))

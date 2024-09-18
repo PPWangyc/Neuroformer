@@ -537,11 +537,15 @@ def pad_tensor(x, length, pad_value=0):
     except:
         print(f"error, x.shape: {x}, length: {length}")
         raise ValueError
+    # if x.shape[0] == 0:
+    #     print("length",length)
+    #     print("x", x.shape)
+    #     # generate zeros tensor with shape length, x.shape[-1]
+    #     dim = x.shape[-1] // length
+    #     # pad_tensor = torch.zeros((length, dim), dtype=x.dtype, device=x.device)
+    #     pad_tensor = torch.zeros(length, dtype=x.dtype, device=x.device)
+    #     return pad_tensor
     if n_pad < 0:
-        if n_pad == -199:
-            # generate zeros tensor with shape length, x.shape[-1]
-            pad_tensor = torch.zeros((length, x.shape[-1]), dtype=x.dtype, device=x.device)
-            return pad_tensor
         return x[..., -length:]
     else:
         pad = list(x.shape)
@@ -930,9 +934,9 @@ class NFDataloader(Dataset):
             """
             data = get_var(data, interval, variable_name=variable_name, trial=trial, dt=dt)
             # print(data.keys())
+            # print("behavior",interval)
             behavior = torch.tensor(np.array(data[variable_name]), 
                                     dtype=torch.float32)
-            # print(behavior.shape)
             if len(data) > 0:
                 behavior_dt = torch.tensor(np.array(data['Time']) - np.array(data['Interval']), dtype=torch.float32)
                 # print("Time: ", data['Time'])
@@ -945,10 +949,9 @@ class NFDataloader(Dataset):
             # if variable_name in tokenizer.stoi.keys():
             if tokenizer is not None:
                 behavior = tokenizer.encode(behavior, variable_name)
-
             # pad
             n_expected_samples = int((interval[1] - interval[0]) / dt)
-            # print('n_expected_samples: ', n_expected_samples)
+            # print('n_expected_samples',n_expected_samples)
             behavior = pad_tensor(behavior, n_expected_samples, self.stoi['PAD'])
             behavior_dt = pad_tensor(behavior_dt, n_expected_samples, self.stoi_dt['PAD'])
             assert len(behavior) == len(behavior_dt), f"behavior: {len(behavior)}, behavior_dt: {len(behavior_dt)}"
@@ -995,7 +998,10 @@ class NFDataloader(Dataset):
                 # now add all firings and timings
                 neuron_firings = []
                 neuron_timings = []
-
+                # print("spike:")
+                # print(idx_0, idx_1)
+                # print(neuron_array.shape)
+                # print(time_array.shape)
                 for idx, time in enumerate(time_array):
                     # assert(len(neuron_array[:, idx]) == len(time_array)), f"neuron_array[:, idx]: {neuron_array[:, idx]}, \
                     #                                                   time: {time_array}"
@@ -1011,7 +1017,10 @@ class NFDataloader(Dataset):
                     'Time': np.array(neuron_timings),
                     'Interval': np.array(neuron_timings)
                 }
-
+                # print(neuron_firings)
+                # print('neuron firings len',len(neuron_firings))
+                # print(neuron_timings)
+                # print('neuron_timings len',len(neuron_timings))
                 chunk = data['ID'][-(block_size - 2):]
                 dix = self.tokenizer.encode(chunk, 'ID')
                 # trial_token = self.stoi['Trial ' + str(int(trial))]
