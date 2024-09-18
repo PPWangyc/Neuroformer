@@ -238,7 +238,7 @@ recursive_print(y)
 preds, features, loss = model(x, y)
 
 # Set training parameters
-MAX_EPOCHS = 2000
+MAX_EPOCHS = 1000
 BATCH_SIZE = 16
 SHUFFLE = True
 
