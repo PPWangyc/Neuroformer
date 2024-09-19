@@ -255,7 +255,7 @@ CKPT_PATH = f"./models/NF.15/Visnav_VR_Expt/{args.dataset}/{model_name}/{args.ti
 CKPT_PATH = CKPT_PATH.replace("namespace", "").replace(" ", "_")
 mode = "finetune" if args.finetune else "pretrain"
 ses = args.eid if args.dataset == "ibl" else "0"
-CKPT_PATH = f"{CKPT_PATH}/{mode}/{ses}"
+CKPT_PATH = f"{CKPT_PATH}/{ses}/{mode}"
 
 if os.path.exists(CKPT_PATH):
     counter = 1
