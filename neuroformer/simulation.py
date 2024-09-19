@@ -409,16 +409,13 @@ def decode_modality(model, dataset, modality,
         modality_true.extend([float(y_t) for y_t in y_modality])
 
     # make modality preds, intervals etc into dataframe=
-    modality_preds = pd.DataFrame(modality_preds)
-    modality_preds.columns = [block_type_modality]
+    # modality_preds = pd.DataFrame(modality_preds)
+    # modality_preds.columns = [block_type_modality]
+    modality_preds = {block_type_modality: modality_preds}
+    modality_preds['true'] = modality_true
     modality_preds['interval'] = intervals
     modality_preds['trial'] = trials
-    # print(modality_preds['behavior_wheel_speed_value'])
-    # print(len(modality_preds['behavior_wheel_speed_value']))
-    # print(f"modality_pred keys: {modality_preds.keys()}")
-    data_df = data_df.reindex(range(len(modality_true)))
-    modality_preds['true'] = modality_true
-
+    return modality_preds
     # make cum interval
     modality_preds['cum_interval'] = modality_preds['interval'].copy()
     prev_trial = None

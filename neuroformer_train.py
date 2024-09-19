@@ -253,6 +253,8 @@ else:
 
 CKPT_PATH = f"./models/NF.15/Visnav_VR_Expt/{args.dataset}/{model_name}/{args.title}/{str(config.layers)}/{args.seed}"
 CKPT_PATH = CKPT_PATH.replace("namespace", "").replace(" ", "_")
+mode = "finetune" if args.finetune else "pretrain"
+CKPT_PATH = f"{CKPT_PATH}/{mode}"
 
 if os.path.exists(CKPT_PATH):
     counter = 1

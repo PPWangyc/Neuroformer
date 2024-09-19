@@ -220,27 +220,31 @@ print(f"Saving inference results in {os.path.join(save_inference_path, filename)
 
 with open(os.path.join(save_inference_path, filename), "wb") as f:
     pickle.dump(results_trial, f)
-print(results_trial['ID'])
-exit()
+
 # %%
 # model.load_state_dict(torch.load(os.path.join(CKPT_PATH, f"_epoch_speed.pt"), map_location=torch.device('cpu')))
 model.load_state_dict(torch.load(os.path.join(CKPT_PATH, f"model.pt"), map_location=torch.device('cpu')))
-args.predict_modes = ['speed', 'phi', 'th']
+args.predict_modes = ['wheel_speed', 'whisker_energy']
 behavior_preds = {}
 if args.predict_modes is not None:
     block_type = 'behavior'
     block_config = get_attr(config.modalities, block_type).variables
     for mode in args.predict_modes:
         mode_config = get_attr(block_config, mode)
-        behavior_preds[mode] = decode_modality(model, test_dataset, modality=mode, 
+        print(f"Decoding {mode} with objective {get_attr(mode_config, 'objective')}")
+        # print(get_attr(mode_config, 'objective'))
+        behavior_preds[mode] = decode_modality(model, finetune_dataset, modality=mode, 
                                           block_type=block_type, objective=get_attr(mode_config, 'objective'))
-        filename = f"behavior_preds_{mode}.csv"
+
+        filename = f"behavior_preds_{mode}.npy"
         save_inference_path = os.path.join(CKPT_PATH, "inference")
         if not os.path.exists(save_inference_path):
             os.makedirs(save_inference_path)
         print(f"Saving inference results in {os.path.join(save_inference_path, filename)}")
-        behavior_preds[mode].to_csv(os.path.join(save_inference_path, filename))
-
+        # save dict to npy
+        np.save(os.path.join(save_inference_path, filename), behavior_preds[mode], allow_pickle=True)
+        # behavior_preds[mode].to_csv(os.path.join(save_inference_path, filename))
+exit()
 # %%
 def plot_regression(y_true, y_pred, mode, model_name, r, p, color='black', 
                     ax=None, axis_limits=None, save_path=None):

@@ -21,6 +21,6 @@ cd ..
 python neuroformer_train.py --dataset ibl \
                             --finetune  \
                             --loss_bprop wheel_speed whisker_energy \
-                            --resume "./models/NF.15/Visnav_VR_Expt/ibl/Neuroformer/None/(state_history=6,_state=6,_stimulus=6,_behavior=6,_self_att=6,_modalities=(n_behavior=25))/25/model.pt" \
+                            --resume "./models/NF.15/Visnav_VR_Expt/ibl/Neuroformer/None/(state_history=6,_state=6,_stimulus=6,_behavior=6,_self_att=6,_modalities=(n_behavior=25))/25/pretrain/model.pt" \
                             --config ./configs/ibl/predict_behav.yaml
 cd script
