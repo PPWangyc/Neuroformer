@@ -15,26 +15,61 @@ from neuroformer.utils import bits_per_spike
 parent_path = os.path.dirname(os.path.dirname(os.getcwd())) + "/"
 import pandas as pd
 from sklearn.metrics import r2_score
+from neuroformer.default_args import DefaultArgs, parse_args
+
+args = parse_args()
+
 folder = "models/NF.15/Visnav_VR_Expt/ibl/Neuroformer/None/(state_history=6,_state=6,_stimulus=6,_behavior=6,_self_att=6,_modalities=(n_behavior=25))/25"
-spike_file_path = glob.glob(os.path.join(folder, 'finetune','inference','results*.pkl'))[0]
-behavior_file_path = glob.glob(os.path.join(folder, 'finetune','inference','behavior*.npy'))
+spike_file_path = glob.glob(os.path.join(
+    folder, 
+    args.eid,
+    'finetune',
+    'inference',
+    'results*.pkl'
+    )
+)[0]
+behavior_file_path = glob.glob(os.path.join(
+    folder, 
+    args.eid,
+    'finetune',
+    'inference',
+    'behavior*.npy'
+    )
+)
 spike_data = np.load(spike_file_path, allow_pickle=True)
+
+def plot_behavior(pred, gt, behavior):
+    import matplotlib.pyplot as plt
+    plt.plot(pred, label='Predicted')
+    plt.plot(gt, label='Ground Truth')
+    plt.xlabel('Time')
+    plt.ylabel(behavior)
+    plt.legend()
+    plt.savefig(f"{behavior}.png")
+    plt.close()
 for behavior in ['wheel_speed', 'whisker_energy']:
     behav_file_path = [f for f in behavior_file_path if behavior in f][0]
     behavior_data = np.load(behav_file_path, allow_pickle=True).item()
     pred = np.array(behavior_data[f'behavior_{behavior}_value'])
+    # average over trials
+    pred = pred.reshape(len(behavior_data['interval']), -1).mean(axis=0)
     gt = np.array(behavior_data['true'])
+    # average over trials
+    gt = gt.reshape(len(behavior_data['interval']), -1).mean(axis=0)
     r2 = r2_score(gt, pred)
     print(f"R2 score for {behavior}: {r2}")
-exit()
-total_neurons = 185
+    plot_behavior(pred, gt, behavior)
+
+train_dataset, val_dataset, test_dataset, meta_data = load_ibl_dataset(
+        cache_dir='data',
+        split_method="predefined",
+        num_sessions=1,
+        eid='db4df448-e449-4a6f-a0e7-288711e7a75a'
+        )
+print(meta_data)
+total_neurons = meta_data['num_neurons'][0]
+
 print(spike_data.keys())
-print(len(spike_data['ID']))
-print(len(spike_data['time']))
-print(len(spike_data['dt'])) 
-print(len(spike_data['Trial']))
-print(len(spike_data['Interval']))
-print(len(spike_data['true']))
 
 # gt_id is a list of tensor, convert it to numpy array
 gt_id = []
@@ -47,18 +82,6 @@ neuron_ids = np.unique(spike_data['ID'])
 time_points = np.unique(spike_data['dt'])
 gt_time_points = np.unique(gt_time)
 trials = np.unique(spike_data['Trial'])
-data_df = {k: v for k, v in spike_data.items() if k in ['ID', 'dt', 'Trial', 'Interval']}
-data_df = pd.DataFrame(data_df)
-data_df = data_df.reindex(range(len(spike_data['time'])))
-data_df['Time'] = spike_data['time']
-data_df['ID'] = gt_id
-# data_df['True'] = data['true']
-ids = [i for i in range(total_neurons)]
-
-rates = get_rates(data_df, ids, spike_data['Interval'])
-print(len(rates[0]))
-exit()
-
 
 # a list of [0, 0.02, 0.04, 0.06, 0.08, 0.1...2.0]
 time_list = [str(round((0.02 * i),2)) for i in range(0, 101)]
@@ -82,13 +105,6 @@ def plot_spiking_activity(spiking_matrix, trial_id):
     plt.title('Spiking Activity Matrix')
     plt.savefig(f"trial_{trial_id}_spiking_activity.png")
     plt.close()
-
-train_dataset, val_dataset, test_dataset, meta_data = load_ibl_dataset(
-        cache_dir='data',
-        split_method="predefined",
-        num_sessions=1,
-        eid='db4df448-e449-4a6f-a0e7-288711e7a75a'
-        )
 
 gt_spikes = get_binned_spikes_from_dataset(test_dataset)
 print(gt_spikes.shape)
