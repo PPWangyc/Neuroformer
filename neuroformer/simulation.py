@@ -369,7 +369,7 @@ def decode_modality(model, dataset, modality,
     model.eval()
     model.to(device)
     
-    loader = DataLoader(dataset, batch_size=50, shuffle=False, pin_memory=False)
+    loader = DataLoader(dataset, batch_size=100, shuffle=False, pin_memory=False)
     pbar = tqdm(enumerate(loader), total=len(loader))
     
     modality_preds = []
@@ -409,12 +409,13 @@ def decode_modality(model, dataset, modality,
         modality_true.extend([float(y_t) for y_t in y_modality])
 
     # make modality preds, intervals etc into dataframe=
-    modality_preds = pd.DataFrame(modality_preds)
-    modality_preds.columns = [block_type_modality]
+    # modality_preds = pd.DataFrame(modality_preds)
+    # modality_preds.columns = [block_type_modality]
+    modality_preds = {block_type_modality: modality_preds}
+    modality_preds['true'] = modality_true
     modality_preds['interval'] = intervals
     modality_preds['trial'] = trials
-    modality_preds['true'] = modality_true
-
+    return modality_preds
     # make cum interval
     modality_preds['cum_interval'] = modality_preds['interval'].copy()
     prev_trial = None

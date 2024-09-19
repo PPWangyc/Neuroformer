@@ -238,7 +238,7 @@ recursive_print(y)
 preds, features, loss = model(x, y)
 
 # Set training parameters
-MAX_EPOCHS = 2000
+MAX_EPOCHS = 1000
 BATCH_SIZE = 16
 SHUFFLE = True
 
@@ -253,6 +253,9 @@ else:
 
 CKPT_PATH = f"./models/NF.15/Visnav_VR_Expt/{args.dataset}/{model_name}/{args.title}/{str(config.layers)}/{args.seed}"
 CKPT_PATH = CKPT_PATH.replace("namespace", "").replace(" ", "_")
+mode = "finetune" if args.finetune else "pretrain"
+ses = args.eid if args.dataset == "ibl" else "0"
+CKPT_PATH = f"{CKPT_PATH}/{ses}/{mode}"
 
 if os.path.exists(CKPT_PATH):
     counter = 1
