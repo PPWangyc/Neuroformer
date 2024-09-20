@@ -8,6 +8,8 @@ import itertools
 import pickle
 import logging
 from inspect import isfunction
+# import r2
+from sklearn.metrics import r2_score
 
 import torch
 import torch.nn as nn
@@ -922,7 +924,7 @@ class Neuroformer(nn.Module):
     
     """
 
-    def __init__(self, config, tokenizer):
+    def __init__(self, config, tokenizer, num_neurons=100):
         super().__init__()
 
         self.device = 'cpu'
@@ -934,6 +936,7 @@ class Neuroformer(nn.Module):
         self.tokenizer = tokenizer
         self.id_vocab_size = tokenizer.ID_vocab_size
         self.dt_vocab_size = tokenizer.dt_vocab_size
+        self.num_neurons = num_neurons
 
         # -- Input Embedding Stem -- #        self.n_embd = config.n_embd
         self.tok_emb = nn.Embedding(self.id_vocab_size, config.n_embd)
@@ -1274,10 +1277,12 @@ class Neuroformer(nn.Module):
                             modality_target = targets['modalities'][modality_type][variable_name]['value']
                             if variable_config['objective'] == 'regression':
                                 loss_modality = F.mse_loss(modality_projection, modality_target.view(B, -1))
+                                r2 = r2_score(modality_target.view(B, -1).cpu().detach().numpy(), modality_projection.cpu().detach().numpy())
                             elif variable_config['objective'] == 'classification':
                                 loss_modality = F.cross_entropy(modality_projection.view(-1, modality_projection.size(-1)), modality_target.view(-1))
                             loss[f'{variable_name}'] = loss_modality
                             preds[f'{variable_name}'] = modality_projection
+                            preds[f'{variable_name}_r2'] = r2
                             
             
             if self.config.contrastive.contrastive:
@@ -1320,15 +1325,29 @@ class Neuroformer(nn.Module):
             loss['time'] = ((2 / 5) * loss_time) * (1 - 1 / n)
 
             t = targets['id'].size(1)
+            pred_neurons_list, pred_time_list = [], []
+            gt_neurons_list, gt_time_list = [], []
             for B, P in enumerate(pad):                
                 id_targets = targets['id'][B, :t - P - 1] # don't include EOS.
-                id_logits_ = id_logits[B, :t - P - 1]         
+                id_logits_ = id_logits[B, :t - P - 1]
+                dt_targets = targets['dt'][B, :t - P - 1]
+                dt_logits_ = dt_logits[B, :t - P - 1]
                 if len(id_targets) > 0:
                     ## score metrics
                     probs_neurons = F.softmax(id_logits_, dim=-1)
                     _, ix_top_k = torch.topk(probs_neurons, k=1, dim=-1)
                     pred_neurons = ix_top_k.detach().flatten()
+                    pred_neurons_list.append(pred_neurons)
                     true_neurons = id_targets.detach().flatten()
+                    gt_neurons_list.append(true_neurons)
+
+                    probs_time = F.softmax(dt_logits_, dim=-1)
+                    _, ix_top_k = torch.topk(probs_time, k=1, dim=-1)
+                    pred_time = ix_top_k.detach().flatten()
+                    pred_time_list.append(pred_time)
+                    true_time = dt_targets.detach().flatten()
+                    gt_time_list.append(true_time)
+
                     precision_score = torchmetrics.functional.precision(true_neurons, pred_neurons, task='multiclass', num_classes=self.id_vocab_size).to(self.device)
                     recall_score = torchmetrics.functional.recall(true_neurons, pred_neurons, task='multiclass', num_classes=self.id_vocab_size).to(self.device)
                     F1_score = torchmetrics.functional.f1_score(true_neurons, pred_neurons, task='multiclass', num_classes=self.id_vocab_size).to(self.device)
@@ -1366,5 +1385,19 @@ class Neuroformer(nn.Module):
         preds['id'] = id_logits    # [:, tf:]    # only id logits
         preds['dt'] = dt_logits
         features['last_layer'] = x
+        # gt_rates = self.get_rates(gt_neurons_list, gt_time_list)
+        # pred_rates = self.get_rates(pred_neurons_list, pred_time_list)
 
         return preds, features, loss
+
+    def get_rates(self, id, time):
+        n = len(id)
+        t = 100
+        assert n == len(time), "id and time should be same length"
+        for i in range(n):
+            neuron_list = id[i]
+            time_list = time[i]
+            spike_rate = torch.zeros([n, t]).to(self.device)
+            for neuron_id in range(len(neuron_list)):
+                spike_rate[neuron_id][time_list[neuron_id]] += 1
+        return spike_rate

@@ -228,7 +228,11 @@ recursive_print(x)
 
 # Update the config
 config.id_vocab_size = tokenizer.ID_vocab_size
-model = Neuroformer(config, tokenizer)
+model = Neuroformer(
+    config, 
+    tokenizer,
+    num_neurons=meta_data['num_neurons'][0]
+)
 
 # Create a DataLoader
 loader = DataLoader(test_dataset, batch_size=2, shuffle=True, num_workers=0)
