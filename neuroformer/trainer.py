@@ -293,8 +293,8 @@ class Trainer:
 
                 for score in config.score_metrics:
                     scores[score].append(preds[score])
-                scores['wheel_speed_r2'].append(preds['wheel_speed_r2']) if 'wheel_speed_r2' in preds else None
-                scores['whisker_energy_r2'].append(preds['whisker_energy_r2']) if 'whisker_energy_r2' in preds else None
+                scores['wheel_speed_r2'].append(preds['wheel_speed_r2']) if type(preds['wheel_speed_r2']) == float else None
+                scores['whisker_energy_r2'].append(preds['whisker_energy_r2']) if type(preds['whisker_energy_r2']) == float else None
 
                 if config.save_every > 0 and it % config.save_every == 0 and it > 0:
                     self.save_checkpoint(total_loss.cpu().detach().numpy(), it)
@@ -320,8 +320,8 @@ class Trainer:
                 # self.writer.add_scalar(f"Score/{split}_{str(score)}", preds[score].mean(), epoch)
                 if config.use_wandb:
                     wandb.log({f"Score/{split}_{str(score)}": preds[score].mean()})
-            wandb.log({f"Score/{split}_{'wheel_speed_r2'}": np.array(scores['wheel_speed_r2']).mean()}) if 'wheel_speed_r2' in scores and config.use_wandb else None
-            wandb.log({f"Score/{split}_{'whisker_energy_r2'}": np.array(scores['whisker_energy_r2']).mean()}) if 'whisker_energy_r2' in scores and config.use_wandb else None
+            wandb.log({f"Score/{split}_{'wheel_speed_r2'}": np.array(scores['wheel_speed_r2']).mean()}) if type(preds['wheel_speed_r2']) == float and config.use_wandb else None
+            wandb.log({f"Score/{split}_{'whisker_energy_r2'}": np.array(scores['whisker_energy_r2']).mean()}) if type(preds['whisker_energy_r2']) == float and config.use_wandb else None
              
             if not is_train:
                 # for score in config.score_metrics:
